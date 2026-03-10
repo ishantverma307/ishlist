@@ -11,6 +11,9 @@
 # production
 /build
 
+#supabase links
+.env
+
 # misc
 .DS_Store
 .env.local

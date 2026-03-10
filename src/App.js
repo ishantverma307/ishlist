@@ -1,27 +1,29 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from 'react';
+import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar'; 
+import Home from './pages/Home';
+import AddNoteModal from './components/AddNoteModal'; 
+import { NoteProvider } from './context/NoteContext';
 
 function App() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <h1 className="text-4xl font-bold text-blue-600 bg-yellow-200">
-  Tailwind Check!
-</h1>
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <NoteProvider>
+      <div className="h-screen bg-sky-50 text-slate-900 font-sans flex flex-col overflow-hidden">
+        {/* We'll update Navbar next to include the login button */}
+        <Navbar onOpenModal={() => setIsModalOpen(true)} />
+
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar />
+          <main className="flex-1 overflow-y-auto">
+            <Home />
+          </main>
+        </div>
+
+        <AddNoteModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      </div>
+    </NoteProvider>
   );
 }
 
