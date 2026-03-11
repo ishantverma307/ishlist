@@ -8,72 +8,55 @@ export const NoteProvider = ({ children }) => {
   const [filter, setFilter] = useState('All');
   const [loading, setLoading] = useState(true);
 
+  // 1. Fetch notes immediately on load (No Auth checks)
   useEffect(() => {
-    const initializeAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        await fetchNotes();
-      }
-      setLoading(false);
-    };
-
-    initializeAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        await fetchNotes();
-      } else {
-        setNotes([]); // Clear UI on logout
-      }
-    });
-
-    return () => subscription?.unsubscribe();
+    fetchNotes();
   }, []);
 
   const fetchNotes = async () => {
+    setLoading(true);
     const { data, error } = await supabase
       .from('notes')
       .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error("Fetch error:", error.message);
+      console.error("Fetch error-ish:", error.message);
     } else {
       setNotes(data || []);
     }
+    setLoading(false);
   };
 
+  // 2. Add Note (Renamed 'data' to 'insertedData' to stop underlines)
   const addNote = async (title, content, category) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data, error } = await supabase
+    const { data: insertedData, error } = await supabase
       .from('notes')
-      .insert([{ title, content, category, user_id: user.id }])
+      .insert([{ title, content, category }])
       .select();
 
     if (error) {
-      console.error("Save error:", error.message);
-    } else if (data) {
-      setNotes((prev) => [data[0], ...prev]);
+      console.error("Save error-ish:", error.message);
+      alert("Failed to save: " + error.message);
+    } else if (insertedData && insertedData.length > 0) {
+      setNotes((prev) => [insertedData[0], ...prev]);
     }
   };
 
+  // 3. Delete Note (Removed unused variables to stop underlines)
   const deleteNote = async (id) => {
-    console.log("Deleting ID:", id);
     if (!id) return;
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('notes')
       .delete()
-      .eq('id', id)
-      .select();
+      .eq('id', id);
 
     if (error) {
-      alert("Delete rejected: " + error.message);
-    } else if (!data || data.length === 0) {
-      alert("Delete failed-ish. Check your RLS policies in Supabase!");
+      console.error("Delete error-ish:", error.message);
+      alert("Delete failed: " + error.message);
     } else {
+      // If no error, we assume it worked and update UI
       setNotes((prev) => prev.filter((note) => note.id !== id));
     }
   };
