@@ -1,7 +1,7 @@
 import React from 'react';
 
 const NoteCard = ({ note, onDelete }) => {
-  // Supabase provides a 'created_at' string. Let's format it nicely.
+  // Supabase provides a 'created_at' string.
   const formatDate = (dateString) => {
     if (!dateString) return "Just now-ish";
     const date = new Date(dateString);
@@ -10,6 +10,16 @@ const NoteCard = ({ note, onDelete }) => {
       day: 'numeric', 
       year: 'numeric' 
     });
+  };
+
+  const handleDelete = () => {
+    // Safety Log: This helps you debug on Netlify if the ID is missing
+    if (!note.id) {
+      console.error("Ishlist Error: This note has no ID and cannot be deleted-ish.", note);
+      alert("This note is missing an ID. Try refreshing the page!");
+      return;
+    }
+    onDelete(note.id);
   };
 
   return (
@@ -39,8 +49,9 @@ const NoteCard = ({ note, onDelete }) => {
           Added {formatDate(note.created_at)}
         </span>
         
+        {/* Updated Delete Button */}
         <button 
-          onClick={() => onDelete(note.id)}
+          onClick={handleDelete}
           className="text-slate-300 hover:text-red-400 text-xs font-semibold uppercase tracking-tighter transition-colors"
         >
           Remove
