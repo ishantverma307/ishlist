@@ -28,23 +28,44 @@ const Navbar = ({ onOpenModal }) => {
 
     if (user) {
       // LOGOUT LOGIC
-      const { error } = await supabase.auth.signOut();
-      if (error) alert(error.message);
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) alert(signOutError.message);
     } else {
-      // LOGIN LOGIC (Using Password)
+      // LOGIN / SIGNUP LOGIC
       const email = window.prompt("Enter your email-ish:");
       if (!email) return;
 
-      const password = window.prompt("Enter your password:");
+      const password = window.prompt("Enter your password (6+ chars):");
       if (!password) return;
 
-      const { error } = await supabase.auth.signInWithPassword({
+      // 1. Try to Login (We only grab 'error' here to avoid the 'data' underline)
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email: email,
         password: password,
       });
 
-      if (error) {
-        alert("Login failed: " + error.message);
+      // 2. If login fails, check if we should Sign Up instead
+      if (signInError) {
+        if (signInError.message.includes("Invalid login credentials") || 
+            signInError.message.includes("Email not confirmed")) {
+          
+          const shouldSignUp = window.confirm("Account not found. Create a new account-ish?");
+          
+          if (shouldSignUp) {
+            const { error: signUpError } = await supabase.auth.signUp({
+              email: email,
+              password: password,
+            });
+
+            if (signUpError) {
+              alert("Signup failed: " + signUpError.message);
+            } else {
+              alert("Signup successful! Welcome to Ishlist.");
+            }
+          }
+        } else {
+          alert("Login failed: " + signInError.message);
+        }
       }
     }
   };
@@ -65,14 +86,12 @@ const Navbar = ({ onOpenModal }) => {
         
         {/* Actions */}
         <div className="flex items-center gap-4">
-          {/* User Email Display (Optional but nice-ish) */}
           {user && (
-            <span className="hidden md:block text-xs font-medium text-slate-400">
-              {user.email}
+            <span className="hidden md:block text-[10px] font-bold uppercase tracking-widest text-slate-400">
+              {user.email.split('@')[0]}
             </span>
           )}
 
-          {/* Login/Logout Button */}
           {supabase && (
             <button 
               onClick={handleAuth}
