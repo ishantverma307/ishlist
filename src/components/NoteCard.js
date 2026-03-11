@@ -12,15 +12,14 @@ const NoteCard = ({ note, onDelete }) => {
   };
 
   const handleDelete = () => {
-    // 1. Log the exact ID to your browser console (Command+Option+J on Mac)
-    console.log("Attempting to delete note with ID:", note.id);
+    // This MUST pop up. If it doesn't, the button click is blocked.
+    window.alert("Button clicked for ID: " + note.id);
 
     if (!note.id) {
-      console.warn("Delete failed locally: No ID found on this card object.");
+      console.error("No ID found on this note object:", note);
       return;
     }
     
-    // 2. Call the delete function from Context
     onDelete(note.id);
   };
 
