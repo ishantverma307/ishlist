@@ -8,27 +8,26 @@ export const NoteProvider = ({ children }) => {
   const [filter, setFilter] = useState('All');
   const [loading, setLoading] = useState(true);
 
-  // 1. Listen for Auth changes and fetch notes accordingly
   useEffect(() => {
-    const checkUserAndFetch = async () => {
+    const initializeAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         await fetchNotes();
-      } else {
-        setNotes([]); // Clear notes if logged out
       }
       setLoading(false);
     };
 
-    checkUserAndFetch();
+    initializeAuth();
 
-    // Listen for sign-in/sign-out to refresh the notes list
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) fetchNotes();
-      else setNotes([]);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        await fetchNotes();
+      } else {
+        setNotes([]); // Clear UI on logout
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => subscription?.unsubscribe();
   }, []);
 
   const fetchNotes = async () => {
@@ -38,43 +37,44 @@ export const NoteProvider = ({ children }) => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error("Error fetching-ish:", error.message);
+      console.error("Fetch error:", error.message);
     } else {
       setNotes(data || []);
     }
   };
 
-  // 2. Add Note (Improved with data check)
   const addNote = async (title, content, category) => {
-  const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-  if (!user) return;
-
-  const { data, error } = await supabase
-    .from('notes')
-    .insert([{ title, content, category, user_id: user.id }])
-    .select(); // <--- This returns the 'id' and 'created_at' from the DB
-
-  if (error) {
-    console.error("Save error-ish:", error.message);
-  } else if (data && data.length > 0) {
-    // We add the real database row (with the ID!) to the top of our list
-    setNotes((prevNotes) => [data[0], ...prevNotes]);
-  }
-};
-  // 3. Delete Note
-  const deleteNote = async (id) => {
-    if (!id) return; // Prevent 'undefined' calls
-
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('notes')
-      .delete()
-      .eq('id', id);
+      .insert([{ title, content, category, user_id: user.id }])
+      .select();
 
     if (error) {
-      alert("Error deleting-ish: " + error.message);
+      console.error("Save error:", error.message);
+    } else if (data) {
+      setNotes((prev) => [data[0], ...prev]);
+    }
+  };
+
+  const deleteNote = async (id) => {
+    console.log("Deleting ID:", id);
+    if (!id) return;
+
+    const { data, error } = await supabase
+      .from('notes')
+      .delete()
+      .eq('id', id)
+      .select();
+
+    if (error) {
+      alert("Delete rejected: " + error.message);
+    } else if (!data || data.length === 0) {
+      alert("Delete failed-ish. Check your RLS policies in Supabase!");
     } else {
-      setNotes((prev) => prev.filter(note => note.id !== id));
+      setNotes((prev) => prev.filter((note) => note.id !== id));
     }
   };
 
