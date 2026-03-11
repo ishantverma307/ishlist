@@ -44,22 +44,20 @@ export const NoteProvider = ({ children }) => {
   };
 
   // 3. Delete Note (Removed unused variables to stop underlines)
-  const deleteNote = async (id) => {
-    if (!id) return;
+ const deleteNote = async (id) => {
+  // 1. Tell Supabase to delete the row with this ID
+  const { error } = await supabase
+    .from('notes')
+    .delete()
+    .eq('id', id);
 
-    const { error } = await supabase
-      .from('notes')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      console.error("Delete error-ish:", error.message);
-      alert("Delete failed: " + error.message);
-    } else {
-      // If no error, we assume it worked and update UI
-      setNotes((prev) => prev.filter((note) => note.id !== id));
-    }
-  };
+  if (error) {
+    console.error("Delete Error:", error.message);
+  } else {
+    // 2. Remove from the screen immediately
+    setNotes((prev) => prev.filter((note) => note.id !== id));
+  }
+};
 
   return (
     <NoteContext.Provider value={{ notes, addNote, deleteNote, filter, setFilter, loading }}>
