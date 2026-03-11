@@ -5,13 +5,14 @@ const Navbar = ({ onOpenModal }) => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // If supabase failed to load, don't run auth checks
     if (!supabase) return;
 
+    // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
     });
 
+    // Listen for auth changes (Login/Logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
@@ -26,13 +27,24 @@ const Navbar = ({ onOpenModal }) => {
     }
 
     if (user) {
-      await supabase.auth.signOut();
+      // LOGOUT LOGIC
+      const { error } = await supabase.auth.signOut();
+      if (error) alert(error.message);
     } else {
-      const email = window.prompt("Enter email for a Magic Link:");
-      if (email) {
-        const { error } = await supabase.auth.signInWithOtp({ email });
-        if (error) alert(error.message);
-        else alert("Check your email!");
+      // LOGIN LOGIC (Using Password)
+      const email = window.prompt("Enter your email-ish:");
+      if (!email) return;
+
+      const password = window.prompt("Enter your password:");
+      if (!password) return;
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
+
+      if (error) {
+        alert("Login failed: " + error.message);
       }
     }
   };
@@ -53,11 +65,18 @@ const Navbar = ({ onOpenModal }) => {
         
         {/* Actions */}
         <div className="flex items-center gap-4">
-          {/* Only show Sign In if Supabase is actually working */}
+          {/* User Email Display (Optional but nice-ish) */}
+          {user && (
+            <span className="hidden md:block text-xs font-medium text-slate-400">
+              {user.email}
+            </span>
+          )}
+
+          {/* Login/Logout Button */}
           {supabase && (
             <button 
               onClick={handleAuth}
-              className="text-sm font-semibold text-slate-500 hover:text-blue-600 transition-colors"
+              className="text-sm font-semibold text-slate-500 hover:text-blue-600 transition-colors px-2"
             >
               {user ? 'Sign Out' : 'Sign In'}
             </button>
