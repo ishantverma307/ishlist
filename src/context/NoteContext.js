@@ -46,32 +46,22 @@ export const NoteProvider = ({ children }) => {
 
   // 2. Add Note (Improved with data check)
   const addNote = async (title, content, category) => {
-    const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-      alert("Please sign in to save notes-ish!");
-      return;
-    }
+  if (!user) return;
 
-    const { data, error } = await supabase
-      .from('notes')
-      .insert([
-        { 
-          title, 
-          content, 
-          category, 
-          user_id: user.id 
-        }
-      ])
-      .select();
+  const { data, error } = await supabase
+    .from('notes')
+    .insert([{ title, content, category, user_id: user.id }])
+    .select(); // <--- This returns the 'id' and 'created_at' from the DB
 
-    if (error) {
-      alert("Error saving-ish: " + error.message);
-    } else if (data) {
-      setNotes((prev) => [data[0], ...prev]);
-    }
-  };
-
+  if (error) {
+    console.error("Save error-ish:", error.message);
+  } else if (data && data.length > 0) {
+    // We add the real database row (with the ID!) to the top of our list
+    setNotes((prevNotes) => [data[0], ...prevNotes]);
+  }
+};
   // 3. Delete Note
   const deleteNote = async (id) => {
     if (!id) return; // Prevent 'undefined' calls
