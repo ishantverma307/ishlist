@@ -12,7 +12,7 @@ const NoteCard = ({ note, onDelete }) => {
   };
 
   const handleDelete = () => {
-    // This MUST pop up. If it doesn't, the button click is blocked.
+    
     window.alert("Button clicked for ID: " + note.id);
 
     if (!note.id) {
